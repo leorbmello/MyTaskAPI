@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <Nullable>enable</Nullable>
+	    <ImplicitUsings>enable</ImplicitUsings>
+	    <OutputPath>..\Bin</OutputPath>
+		<Version>1.0.0.0</Version>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="7.0.13" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.5" />
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="7.0.13" />
+        <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="7.0.13" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\LeoMello.DAL\LeoMello.DAL.csproj" />
+        <ProjectReference Include="..\LeoMello.IoC\LeoMello.IoC.csproj" />
+        <ProjectReference Include="..\LeoMello.Shared\LeoMello.Shared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Controllers\" />
+    </ItemGroup>
+
+</Project>
