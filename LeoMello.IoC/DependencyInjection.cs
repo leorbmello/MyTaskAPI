@@ -1,7 +1,10 @@
-﻿using LeoMello.Application.Interfaces;
+﻿using LeoMello.Application.Entities;
+using LeoMello.Application.Interfaces;
 using LeoMello.DAL;
+using LeoMello.DAL.Entities;
 using LeoMello.IoC.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,7 +27,12 @@ namespace LeoMello.IoC
                 options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
             );
 
-            services.Configure<IAuthConfig>(configuration.GetSection("AuthConfig"));
+            services.Configure<AuthConfig>(configuration.GetSection("AuthConfig"));
+
+            // add sigin manager
+            services.AddIdentity<ApplicationUser, ApplicationRole>()
+                .AddEntityFrameworkStores<ApplicationDbContext>()
+                .AddDefaultTokenProviders();
 
             // set the authentication information
             services.AddAuthentication(options =>

@@ -5,7 +5,10 @@ using Microsoft.Extensions.Logging;
 
 namespace LeoMello.DAL
 {
-    public class ApplicationDbContext : IdentityDbContext
+    /// <summary>
+    ///     Represents our data-access-layer (DAL), allows us to control any database entity.
+    /// </summary>
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>
     {
         private readonly ILogger<ApplicationDbContext> logger;
 
@@ -13,10 +16,19 @@ namespace LeoMello.DAL
         public virtual DbSet<ApplicationUser> Users { get; set; }
         public virtual DbSet<ApplicationUserClaim> UserClaims { get; set; }
 
+
+        // TODO: Database entities
+
+
         public ApplicationDbContext(ILogger<ApplicationDbContext> logger, DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
             this.logger = logger;
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+           // Do nothing.
         }
 
         #region CRUD Operations
@@ -39,7 +51,7 @@ namespace LeoMello.DAL
             }
             catch (Exception ex)
             {
-                logger.LogCritical("SaveAsync()-> Error: {}", ex.ToString());
+                logger.LogCritical("CreateAsync()-> Error: {}", ex.ToString());
                 return false;
             }
         }

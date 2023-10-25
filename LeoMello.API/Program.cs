@@ -1,4 +1,4 @@
-using LeoMello.Application.Interfaces;
+using LeoMello.Application.Entities;
 using LeoMello.IoC;
 using LeoMello.Shared.Exceptions.Configuration;
 using LeoMello.Shared.Exceptions.Models;
@@ -39,15 +39,12 @@ namespace LeoMello.API
                         Name = builder.Configuration["Swagger:Contact:Name"]
                     }
                 });
-
-                string xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-                opt.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
             });
 
             var app = builder.Build();
             
             // validate configuration
-            var authConfig = app.Services.GetRequiredService<IOptions<IAuthConfig>>().Value;
+            var authConfig = app.Services.GetRequiredService<IOptions<AuthConfig>>().Value;
             if (authConfig is null)
             {
                 throw new ConfigurationException(new ExceptionErrorMessage(ExceptionCode.AuthConfigMissing, "The AuthConfig is missing on app settings!"));
@@ -57,11 +54,7 @@ namespace LeoMello.API
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
-                app.UseSwaggerUI(opt =>
-                {
-                    opt.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
-                    opt.RoutePrefix = "swagger-ui";
-                });
+                app.UseSwaggerUI();
             }
 
             app.UseHttpsRedirection();

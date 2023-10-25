@@ -6,8 +6,10 @@ using LeoMello.DAL;
 using LeoMello.DAL.Entities;
 using LeoMello.Shared.Exceptions.Authorization;
 using LeoMello.Shared.Exceptions.Configuration;
+using LeoMello.Shared.Exceptions.Creation;
 using LeoMello.Shared.Exceptions.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -17,25 +19,51 @@ namespace LeoMello.Application.Services
 {
     public class AuthService : IAuthService
     {
-        private const int AUTHTOKEN_EXPIRATION = 300; // in seconds
-
         private readonly AuthConfig tokenConfig;
         private readonly SignInManager<ApplicationUser> signInManager;
         private readonly UserManager<ApplicationUser> userManager;
         private readonly ApplicationDbContext dbContext;
 
         public AuthService(
-            IConfiguration configuration,
             ApplicationDbContext dbContext,
-            SignInManager<ApplicationUser> signInManager,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            SignInManager<ApplicationUser> signInManager)
         {
             this.dbContext = dbContext;
             this.signInManager = signInManager;
             this.userManager = userManager;
+        }
 
-            // bind the config section
-            configuration.GetSection("AuthConfig").Bind(tokenConfig);
+        /// <summary>
+        ///     WARNING: This is a test code, remove it before release!
+        /// </summary>
+        public async Task<ApplicationUser> CreateUserAsync(string username, string password, string role)
+        {
+            var exist = await dbContext.Users.FirstOrDefaultAsync(x => x.UserName.Equals(username));
+            if (exist != null)
+            {
+                throw new CreationException(new ExceptionErrorMessage(ExceptionCode.UserAlreadyExist, $"{username} already exists!"));
+            }
+
+            var newUser = new ApplicationUser 
+            {
+                UserName = username, 
+                CreationDate = DateTime.Now, 
+            };
+
+            var createResult = await userManager.CreateAsync(newUser, password);
+            if (createResult.Succeeded)
+            {
+                if (!await dbContext.CreateAsync(new ApplicationUserClaim() { UserId = newUser.Id, ClaimType = "Role", ClaimValue = role }))
+                {
+                    throw new CreationException(new ExceptionErrorMessage(ExceptionCode.UserRoleAssingFail, $"{username} could not receive the role!"));
+                }
+
+                return newUser;
+            }
+
+            // yes, null, an error during creation.
+            return null;
         }
 
         public async Task<AuthModelResponse> AuthenticateAsync(AuthModelRequest request)
@@ -43,6 +71,11 @@ namespace LeoMello.Application.Services
             if (request.Username is null)
             {
                 throw new AuthorizationException(new ExceptionErrorMessage(ExceptionCode.AuthInvalidUser, "Username can`t be null!"));
+            }
+
+            if (tokenConfig is null)
+            {
+                throw new ConfigurationException(new ExceptionErrorMessage(ExceptionCode.AuthConfigMissing, "Missing AuthConfig information!"));
             }
 
             var user = await userManager.FindByNameAsync(request.Username);
@@ -60,7 +93,7 @@ namespace LeoMello.Application.Services
 
             if (signinResult.Succeeded)
             {
-                return new AuthModelResponse(CreateToken(user), DateTime.Now.AddSeconds(AUTHTOKEN_EXPIRATION));
+                return new AuthModelResponse(CreateToken(user), DateTime.Now.AddSeconds(tokenConfig.Expiration));
             }
 
             throw new AuthorizationException(new ExceptionErrorMessage(ExceptionCode.AuthFailed, "Failed to authenticate!"));
@@ -73,11 +106,6 @@ namespace LeoMello.Application.Services
                 .Select(x => x.ToClaim())
                 .ToList();
 
-            if (tokenConfig is null)
-            {
-                throw new ConfigurationException(new ExceptionErrorMessage(ExceptionCode.AuthConfigMissing, "Missing AuthConfig information!"));
-            }
-
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenConfig.Key)); 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -85,7 +113,7 @@ namespace LeoMello.Application.Services
                 issuer: tokenConfig.Issuer,
                 audience: tokenConfig.Audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddSeconds(AUTHTOKEN_EXPIRATION),
+                expires: DateTime.UtcNow.AddSeconds(tokenConfig.Expiration),
                 signingCredentials: creds
             );
 
