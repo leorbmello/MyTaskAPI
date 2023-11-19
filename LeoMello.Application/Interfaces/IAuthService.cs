@@ -6,5 +6,6 @@ namespace LeoMello.Application.Interfaces
     public interface IAuthService
     {
         Task<AuthModelResponse> AuthenticateAsync(AuthModelRequest request);
+        Task<CreateUserModelResponse> CreateUserAsync(CreateUserModelRequest request);
     }
 }
